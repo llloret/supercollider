@@ -146,6 +146,12 @@ private:
 	static int readlineRecompile(int, int);
 	static void readlineCmdLine(char *cmdLine);
 #endif
+#ifdef HAVE_LINENOISE
+	static void linenoiseInit();
+	static void linenoiseRecompile();
+    static void linenoiseQuit(); 
+    void startInputRead_();
+#endif	
 	static void *pipeFunc( void * );
 	void pushCmdLine( const char *newData, size_t size );
 

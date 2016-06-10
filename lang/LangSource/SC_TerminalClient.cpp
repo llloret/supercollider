@@ -24,6 +24,9 @@
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 
+#define HAVE_LINENOISE
+#undef HAVE_READLINE
+	
 #include "SC_TerminalClient.h"
 #ifdef SC_QT
 #include "../../QtCollider/LanguageClient.h"
@@ -38,6 +41,7 @@
 # include <io.h>
 # include <windows.h>
 # include <ioapiset.h>
+#include <future>
 #endif
 
 #ifdef __APPLE__
@@ -60,13 +64,16 @@
 #include "SC_LanguageConfig.hpp"
 #include "SC_Version.hpp"
 
+
+#include "linenoise.h"
+
 static FILE* gPostDest = stdout;
 
 SC_TerminalClient::SC_TerminalClient(const char* name)
 	: SC_LanguageClient(name),
 	  mReturnCode(0),
 	  mUseReadline(false),
-      mWork(mIoService),
+	  mWork(mIoService),
 	  mTimer(mIoService),
 #ifndef _WIN32
 	  mStdIn(mInputService, STDIN_FILENO)
@@ -114,18 +121,18 @@ void SC_TerminalClient::printUsage()
 	fprintf(stdout, "Usage:\n   %s [options] [file..] [-]\n\n", getName());
 	fprintf(stdout,
 			"Options:\n"
-			"   -v                             Print supercollider version and exit\n"
-			"   -d <path>                      Set runtime directory\n"
-			"   -D                             Enter daemon mode (no input)\n"
-			"   -g <memory-growth>[km]         Set heap growth (default %s)\n"
-			"   -h                             Display this message and exit\n"
-			"   -l <path>                      Set library configuration file\n"
-			"   -m <memory-space>[km]          Set initial heap size (default %s)\n"
-			"   -r                             Call Main.run on startup\n"
-			"   -s                             Call Main.stop on shutdown\n"
-			"   -u <network-port-number>       Set UDP listening port (default %d)\n"
-			"   -i <ide-name>                  Specify IDE name (for enabling IDE-specific class code, default \"%s\")\n"
-			"   -a                             Standalone mode\n",
+			"   -v							 Print supercollider version and exit\n"
+			"   -d <path>					  Set runtime directory\n"
+			"   -D							 Enter daemon mode (no input)\n"
+			"   -g <memory-growth>[km]		 Set heap growth (default %s)\n"
+			"   -h							 Display this message and exit\n"
+			"   -l <path>					  Set library configuration file\n"
+			"   -m <memory-space>[km]		  Set initial heap size (default %s)\n"
+			"   -r							 Call Main.run on startup\n"
+			"   -s							 Call Main.stop on shutdown\n"
+			"   -u <network-port-number>	   Set UDP listening port (default %d)\n"
+			"   -i <ide-name>				  Specify IDE name (for enabling IDE-specific class code, default \"%s\")\n"
+			"   -a							 Standalone mode\n",
 			memGrowBuf,
 			memSpaceBuf,
 			opt.mPort,
@@ -287,7 +294,7 @@ int SC_TerminalClient::run(int argc, char** argv)
 
 void SC_TerminalClient::recompileLibrary()
 {
-    SC_LanguageClient::recompileLibrary(mOptions.mStandalone);
+	SC_LanguageClient::recompileLibrary(mOptions.mStandalone);
 }
 
 void SC_TerminalClient::quit(int code)
@@ -347,10 +354,11 @@ void SC_TerminalClient::interpretInput()
 		i = 0;
 	}
 	mInputBuf.reset();
-
+#ifdef HAVE_READLINE
 	if (mUseReadline)
 		mReadlineSem.post();
 	else
+#endif
 		startInputRead();
 }
 
@@ -442,6 +450,8 @@ static void sc_rl_signalhandler(int sig)
 	sc_rl_cleanlf();
 }
 
+
+
 static int sc_rl_mainstop(int i1, int i2)
 {
 	static_cast<SC_TerminalClient*>(SC_LanguageClient::instance())
@@ -460,12 +470,15 @@ char ** sc_rl_completion (const char *text, int start, int end){
 }
 */
 
+
+
 int SC_TerminalClient::readlineRecompile(int i1, int i2)
 {
 	static_cast<SC_TerminalClient*>(SC_LanguageClient::instance())->sendSignal(sig_recompile);
 	sc_rl_cleanlf();
 	return 0;
 }
+
 
 void SC_TerminalClient::readlineCmdLine( char *cmdLine )
 {
@@ -488,6 +501,7 @@ void SC_TerminalClient::readlineCmdLine( char *cmdLine )
 		client->mReadlineSem.wait();
 	}
 }
+
 
 void SC_TerminalClient::readlineInit()
 {
@@ -514,28 +528,78 @@ void SC_TerminalClient::readlineInit()
 
 #endif // HAVE_READLINE
 
+#ifdef HAVE_LINENOISE
+void SC_TerminalClient::linenoiseRecompile()
+{
+	fprintf(stdout, "linenoiseRecompile()\n");
+	static_cast<SC_TerminalClient*>(SC_LanguageClient::instance())->sendSignal(sig_recompile);
+}
+
+void SC_TerminalClient::linenoiseQuit()
+{
+    fprintf(stdout, "linenoiseQuit()\n");
+    SC_TerminalClient *client = static_cast<SC_TerminalClient*>(instance());
+    client->onQuit(0);
+}
+
+static void linenoise_mainstop()
+{
+    fprintf(stdout, "linenoise_mainstop()\n");
+    static_cast<SC_TerminalClient*>(SC_LanguageClient::instance())
+        ->sendSignal(SC_TerminalClient::sig_stop);
+}
+
+void SC_TerminalClient::linenoiseInit()
+{
+	linenoiseBindkeyAdd('T' - 0x40, &linenoise_mainstop);
+	linenoiseBindkeyAdd('X' - 0x40, &linenoiseRecompile);	
+    linenoiseBindkeyAdd('D' - 0x40, &linenoiseQuit);
+}
+
+#endif
+
+
 void SC_TerminalClient::startInputRead()
 {
+    std::async(std::launch::async, &SC_TerminalClient::startInputRead_, this);
+}
+
+void SC_TerminalClient::startInputRead_()
+{
+    char* result;
+	if (mUseReadline){
+        do {
+            result = linenoise("sc3>");
+            if (result){
+                linenoiseHistoryAdd(result);
+                strncpy(inputBuffer.data(), result, inputBuffer.size());
+                inputBuffer[strlen(result)] = kInterpretPrintCmdLine;
+                inputBuffer[strlen(result) + 1] = 0;
+                DWORD bytes_transferred = strlen(result) + 1;
+                onInputRead(boost::system::error_code(), bytes_transferred);
+            }
+        } while (!result);
+	}
+	else{
 #ifndef _WIN32
-	if (mUseReadline)
-		mStdIn.async_read_some(boost::asio::null_buffers(), boost::bind(&SC_TerminalClient::onInputRead, this, _1, _2));
-	else
 		mStdIn.async_read_some(boost::asio::buffer(inputBuffer), boost::bind(&SC_TerminalClient::onInputRead, this, _1, _2));
 #else
-	mStdIn.async_wait( [&] (const boost::system::error_code & error) {
-		if(error)
-			onInputRead(error, 0);
-		else {
-			DWORD bytes_transferred;
+		mStdIn.async_wait( [&] (const boost::system::error_code & error) {
+			if(error)
+				onInputRead(error, 0);
+			else {
+				DWORD bytes_transferred;
 
-			::ReadFile(GetStdHandle(STD_INPUT_HANDLE),
-					   inputBuffer.data(),
-					   inputBuffer.size(),
-					   &bytes_transferred,
-					   nullptr);
-			onInputRead(error, bytes_transferred);
-		}
-	});
+				::ReadFile(GetStdHandle(STD_INPUT_HANDLE),
+						   inputBuffer.data(),
+						   inputBuffer.size(),
+						   &bytes_transferred,
+						   nullptr);
+
+				onInputRead(error, bytes_transferred);
+			}
+		});
+	}
 #endif
 }
 
@@ -576,11 +640,18 @@ void SC_TerminalClient::inputThreadFn()
 	if (mUseReadline)
 		readlineInit();
 #endif
+#ifdef HAVE_LINENOISE
+	if (mUseReadline)
+		linenoiseInit();
+#endif
 
 	startInputRead();
 
-	boost::asio::io_service::work work(mInputService);
-	mInputService.run();
+	
+    if (!mUseReadline){
+        boost::asio::io_service::work work(mInputService);
+        mInputService.run();
+    }
 }
 
 
@@ -620,6 +691,12 @@ void SC_TerminalClient::initInput()
 		return;
 	}
 #endif
+#ifdef HAVE_LINENOISE
+	if (strcmp(gIdeName, "none") == 0) {
+		mUseReadline = true;
+		return;
+	}
+#endif
 }
 
 
@@ -634,7 +711,7 @@ void SC_TerminalClient::endInput()
 	mInputService.stop();
 	mStdIn.cancel();
 #ifdef _WIN32
-	// Note this breaks Windows XP compatibility, since this function is only defined in Vista and later 
+	// Note this breaks Windows XP compatibility, since this function is only defined in Vista and later
 	::CancelIoEx(GetStdHandle(STD_INPUT_HANDLE), nullptr);
 #endif
 	postfl("main: waiting for input thread to join...\n");
