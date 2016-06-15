@@ -144,8 +144,8 @@ private:
 	// NOTE: called from input thread:
 	static void linenoiseInit();
 	static void linenoiseRecompile();
-    static void linenoiseQuit(); 
-    void startInputRead_();
+	static void linenoiseQuit();
+	void startInputRead_();
 
 	static void *pipeFunc( void * );
 	void pushCmdLine( const char *newData, size_t size );
@@ -182,11 +182,11 @@ private:
 	void startInputRead();
 	void onInputRead(const boost::system::error_code& error, std::size_t bytes_transferred);
 
-    std::future<void> m_future;
+	std::future<void> m_future;
 
 	// command input
 	bool mUseReadline;
-    static bool mWantsToExit;
+	static bool mWantsToExit;
 };
 
 #endif // SC_TERMINALCLIENT_H_INCLUDED

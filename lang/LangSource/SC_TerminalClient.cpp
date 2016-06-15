@@ -430,51 +430,51 @@ void SC_TerminalClient::linenoiseRecompile()
 
 void SC_TerminalClient::linenoiseQuit()
 {
-    fprintf(stdout, "linenoiseQuit()\n");
-    SC_TerminalClient *client = static_cast<SC_TerminalClient*>(instance());
-    mWantsToExit = true;
-    client->onQuit(0);
+	fprintf(stdout, "linenoiseQuit()\n");
+	SC_TerminalClient *client = static_cast<SC_TerminalClient*>(instance());
+	mWantsToExit = true;
+	client->onQuit(0);
 }
 
 static void linenoise_mainstop()
 {
-    fprintf(stdout, "linenoise_mainstop()\n");
-    static_cast<SC_TerminalClient*>(SC_LanguageClient::instance())
-        ->sendSignal(SC_TerminalClient::sig_stop);
+	fprintf(stdout, "linenoise_mainstop()\n");
+	static_cast<SC_TerminalClient*>(SC_LanguageClient::instance())
+		->sendSignal(SC_TerminalClient::sig_stop);
 }
 
 void SC_TerminalClient::linenoiseInit()
 {
 	linenoiseBindkeyAdd('T' - 0x40, &linenoise_mainstop);
-	linenoiseBindkeyAdd('X' - 0x40, &linenoiseRecompile);	
-    linenoiseBindkeyAdd('D' - 0x40, &linenoiseQuit);
+	linenoiseBindkeyAdd('X' - 0x40, &linenoiseRecompile);
+	linenoiseBindkeyAdd('D' - 0x40, &linenoiseQuit);
 }
 
 
 void SC_TerminalClient::startInputRead()
 {
-    if (m_future.valid()){
-        m_future.get();
-    }
-    m_future = std::async(std::launch::async, &SC_TerminalClient::startInputRead_, this);
+	if (m_future.valid()){
+		m_future.get();
+	}
+	m_future = std::async(std::launch::async, &SC_TerminalClient::startInputRead_, this);
 
 }
 
 void SC_TerminalClient::startInputRead_()
 {
-    char* result;
+	char* result;
 	if (mUseReadline){
-        do {
-            result = linenoise("sc3>");
-            if (result){
-                linenoiseHistoryAdd(result);
-                strncpy(inputBuffer.data(), result, inputBuffer.size());
-                inputBuffer[strlen(result)] = kInterpretPrintCmdLine;
-                inputBuffer[strlen(result) + 1] = 0;
-                unsigned long bytes_transferred = strlen(result) + 1;
-                onInputRead(boost::system::error_code(), bytes_transferred);
-            }
-        } while (!result && !mWantsToExit);
+		do {
+			result = linenoise("sc3>");
+			if (result){
+				linenoiseHistoryAdd(result);
+				strncpy(inputBuffer.data(), result, inputBuffer.size());
+				inputBuffer[strlen(result)] = kInterpretPrintCmdLine;
+				inputBuffer[strlen(result) + 1] = 0;
+				unsigned long bytes_transferred = strlen(result) + 1;
+				onInputRead(boost::system::error_code(), bytes_transferred);
+			}
+		} while (!result && !mWantsToExit);
 	}
 	else{
 #ifndef _WIN32
@@ -484,7 +484,7 @@ void SC_TerminalClient::startInputRead_()
 			if(error)
 				onInputRead(error, 0);
 			else {
-                unsigned long bytes_transferred;
+				unsigned long bytes_transferred;
 
 				::ReadFile(GetStdHandle(STD_INPUT_HANDLE),
 						   inputBuffer.data(),
@@ -530,11 +530,10 @@ void SC_TerminalClient::inputThreadFn()
 
 	startInputRead();
 
-	
-    if (!mUseReadline){
-        boost::asio::io_service::work work(mInputService);
-        mInputService.run();
-    }
+	if (!mUseReadline){
+		boost::asio::io_service::work work(mInputService);
+		mInputService.run();
+	}
 }
 
 
