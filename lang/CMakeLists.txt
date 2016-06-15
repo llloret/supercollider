@@ -22,7 +22,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include/common
                     ${CMAKE_SOURCE_DIR}/external_libraries/hidapi/hidapi_parser
 
                     ${CMAKE_SOURCE_DIR}/external_libraries/nova-tt
-		    ${CMAKE_SOURCE_DIR}/../linenoise-ng/include
+                    ${CMAKE_SOURCE_DIR}/external_libraries/linenoise-ng/include
                     LangSource/Bison)
 
 
@@ -86,9 +86,9 @@ set(sclang_sources
 
 	${CMAKE_SOURCE_DIR}/common/sc_popen.cpp
 
-	${CMAKE_SOURCE_DIR}/../linenoise-ng/src/ConvertUTF.cpp
-	${CMAKE_SOURCE_DIR}/../linenoise-ng/src/linenoise.cpp
-	${CMAKE_SOURCE_DIR}/../linenoise-ng/src/wcwidth.cpp
+	${CMAKE_SOURCE_DIR}/external_libraries/linenoise-ng/src/ConvertUTF.cpp
+	${CMAKE_SOURCE_DIR}/external_libraries/linenoise-ng/src/linenoise.cpp
+	${CMAKE_SOURCE_DIR}/external_libraries/linenoise-ng/src/wcwidth.cpp
 
 )
 
