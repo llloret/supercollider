@@ -30,8 +30,6 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 	find_package(ALSA)
 endif()
 
-find_package(Readline 5.0)
-
 find_package(Sndfile)
 
 set(sclang_sources
@@ -258,13 +256,6 @@ if (NOT WIN32)
 endif()
 
 ## external libraries
-if(READLINE_FOUND)
-	message(STATUS "Compiling with Readline support")
-	target_compile_definitions(libsclang PUBLIC HAVE_READLINE)
-	target_include_directories(libsclang PUBLIC ${READLINE_INCLUDE_DIR})
-	target_link_libraries(libsclang ${READLINE_LIBRARY})
-endif(READLINE_FOUND)
-
 if (APPLE)
 	target_link_libraries(libsclang "-framework Carbon")
 	target_link_libraries(libsclang "-framework CoreAudio")
@@ -357,14 +348,6 @@ elseif(WIN32)
     if(FFTW3F_LIBRARY_DIR)
       list(APPEND SC_WIN_DLL_DIRS "${FFTW3F_LIBRARY_DIR}")
     endif(FFTW3F_LIBRARY_DIR)
-    if(READLINE_LIBRARY_DIR)
-      file(GLOB READLINE_DLL "${READLINE_LIBRARY_DIR}/*readline*.dll")
-      list(APPEND SC_WIN_DLL_DIRS "${READLINE_LIBRARY_DIR}")
-      add_custom_command(TARGET sclang
-          POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different "${READLINE_DLL}" $<TARGET_FILE_DIR:sclang>
-      )
-    endif(READLINE_LIBRARY_DIR)
     if(QT_BIN_PATH)
       list(APPEND SC_WIN_DLL_DIRS "${QT_BIN_PATH}")
     endif(QT_BIN_PATH)
