@@ -113,18 +113,18 @@ void SC_TerminalClient::printUsage()
 	fprintf(stdout, "Usage:\n   %s [options] [file..] [-]\n\n", getName());
 	fprintf(stdout,
 			"Options:\n"
-			"   -v							 Print supercollider version and exit\n"
-			"   -d <path>					  Set runtime directory\n"
-			"   -D							 Enter daemon mode (no input)\n"
-			"   -g <memory-growth>[km]		 Set heap growth (default %s)\n"
-			"   -h							 Display this message and exit\n"
-			"   -l <path>					  Set library configuration file\n"
-			"   -m <memory-space>[km]		  Set initial heap size (default %s)\n"
-			"   -r							 Call Main.run on startup\n"
-			"   -s							 Call Main.stop on shutdown\n"
-			"   -u <network-port-number>	   Set UDP listening port (default %d)\n"
-			"   -i <ide-name>				  Specify IDE name (for enabling IDE-specific class code, default \"%s\")\n"
-			"   -a							 Standalone mode\n",
+			"   -v                             Print supercollider version and exit\n"
+			"   -d <path>                      Set runtime directory\n"
+			"   -D                             Enter daemon mode (no input)\n"
+			"   -g <memory-growth>[km]         Set heap growth (default %s)\n"
+			"   -h                             Display this message and exit\n"
+			"   -l <path>                      Set library configuration file\n"
+			"   -m <memory-space>[km]          Set initial heap size (default %s)\n"
+			"   -r                             Call Main.run on startup\n"
+			"   -s                             Call Main.stop on shutdown\n"
+			"   -u <network-port-number>       Set UDP listening port (default %d)\n"
+			"   -i <ide-name>                  Specify IDE name (for enabling IDE-specific class code, default \"%s\")\n"
+			"   -a                             Standalone mode (exclude SCClassLibrary and user and system Extensions folders from search path)\n",
 			memGrowBuf,
 			memSpaceBuf,
 			opt.mPort,
