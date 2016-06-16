@@ -15,4 +15,4 @@
 	url = https://github.com/supercollider/scvim.git
 [submodule "external_libraries/linenoise-ng"]
 	path = external_libraries/linenoise-ng
-	url = https://github.com/llloret/linenoise-ng
+	url = https://github.com/supercollider/linenoise-ng
